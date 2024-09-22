@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for, render_template, request, session, flash
 from datetime import timedelta
+import sqlalchemy
 
 app = Flask(__name__)
 app.secret_key = 'hello'
@@ -15,28 +16,41 @@ def login():
         session.permanent = True
         user = request.form["cs"]
         session["user"] = user
+        flash(f"You have logged in successfully")
         return redirect(url_for("user"))
     else:
         if 'user' in session:
+            flash("Already Logged In!")
             return redirect(url_for('user'))
         
         return render_template('login.html')
     
 
-@app.route('/user/')
+@app.route('/user/', methods=["POST", "GET"])
 def user():
+    email = None
     if "user" in session:
         user = session["user"]
-        return render_template("user.html", user=user)
+
+        if request.method == "POST":
+            email = request.form["email"]
+            session["email"] = email
+            flash("Your email was saved!")
+        else:
+            if "email" in session:
+                email = session["email"]
+
+        return render_template("user.html", email=email)
     else:
+        flash("You are not logged in")
         return redirect(url_for('login'))
     
 @app.route('/logout')
 def logout():
-    if "user" in session:
-        user = session["user"]
-        flash(f"You have been logged out, {user}", "info")
+    
+    flash(f"You have been logged out", "info")
     session.pop("user", None)
+    session.pop("email", None)
     return redirect(url_for('login'))
 
 
